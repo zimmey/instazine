@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Article;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,7 +14,11 @@ class PictureController extends Controller
     {
         $path = $request->query('url');
 
-        if (! $this->isSafeRelativeBmpPath($path) || ! Storage::disk('local')->exists($path)) {
+        if (
+            ! $this->isSafeRelativeBmpPath($path)
+            || ! $this->isPrintable($path)
+            || ! Storage::disk('local')->exists($path)
+        ) {
             return $this->json(null);
         }
 
@@ -41,6 +46,20 @@ class PictureController extends Controller
         } finally {
             imagedestroy($image);
         }
+    }
+
+    /**
+     * Only serve the configured banner and dividers, or pictures of approved articles.
+     */
+    private function isPrintable(string $path): bool
+    {
+        $configured = array_filter([
+            config('instazine.banner'),
+            ...(array) config('instazine.dividers', []),
+        ], 'filled');
+
+        return in_array($path, $configured, true)
+            || Article::query()->where('Pic', $path)->where('Approved', true)->exists();
     }
 
     private function isSafeRelativeBmpPath(mixed $path): bool

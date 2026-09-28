@@ -14,6 +14,8 @@ return [
         env('INSTAZINE_DIVIDER_C'),
         env('INSTAZINE_DIVIDER_D'),
     ],
+    // Shared secret the ESP32 sends as X-Device-Token. Leave empty to keep the device API open.
+    'device_token' => env('INSTAZINE_DEVICE_TOKEN', ''),
     // Must match PRINTER_PIXEL_WIDTH in the ESP32 firmware.
     'printer_pixel_width' => (int) env('INSTAZINE_PRINTER_PIXEL_WIDTH', 576),
     'image_height_max' => (int) env('INSTAZINE_IMAGE_HEIGHT_MAX', 2304),

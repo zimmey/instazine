@@ -2,11 +2,15 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Article;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PictureTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_it_returns_bmp_dimensions_and_packed_one_bit_pixels(): void
     {
         Storage::fake('local');
@@ -25,6 +29,7 @@ class PictureTest extends TestCase
         $contents = ob_get_clean();
         imagedestroy($image);
         Storage::disk('local')->put('article-pics/example.bmp', $contents);
+        $this->approvedArticleWithPicture('article-pics/example.bmp');
 
         $response = $this->getJson('/api/pic?url=article-pics/example.bmp')
             ->assertOk()
@@ -62,10 +67,66 @@ class PictureTest extends TestCase
     {
         Storage::fake('local');
         Storage::disk('local')->put('article-pics/not-a-bitmap.bmp', 'not a bitmap');
+        $this->approvedArticleWithPicture('article-pics/not-a-bitmap.bmp');
 
         $this->getJson('/api/pic?url=article-pics/not-a-bitmap.bmp')
             ->assertOk()
             ->assertContent('null')
             ->assertHeader('Content-Type', 'application/json');
+    }
+
+    public function test_it_only_serves_pictures_of_approved_articles(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('article-pics/pending.bmp', $this->bitmap());
+        $article = Article::query()->create([
+            'Approved' => false,
+            'Pic' => 'article-pics/pending.bmp',
+            'Author' => 1,
+            'Date' => now(),
+        ]);
+
+        $this->getJson('/api/pic?url=article-pics/pending.bmp')->assertContent('null');
+
+        $article->update(['Approved' => true]);
+
+        $this->getJson('/api/pic?url=article-pics/pending.bmp')->assertJsonPath('width', 8);
+    }
+
+    public function test_it_serves_the_configured_banner_and_dividers_but_not_other_files(): void
+    {
+        Storage::fake('local');
+        config()->set('instazine.banner', 'banners/header.bmp');
+        config()->set('instazine.dividers', ['banners/divider.bmp', null]);
+
+        foreach (['banners/header.bmp', 'banners/divider.bmp', 'banners/other.bmp'] as $path) {
+            Storage::disk('local')->put($path, $this->bitmap());
+        }
+
+        $this->getJson('/api/pic?url=banners/header.bmp')->assertJsonPath('height', 1);
+        $this->getJson('/api/pic?url=banners/divider.bmp')->assertJsonPath('height', 1);
+        $this->getJson('/api/pic?url=banners/other.bmp')->assertContent('null');
+    }
+
+    private function approvedArticleWithPicture(string $path): void
+    {
+        Article::query()->create([
+            'Approved' => true,
+            'Pic' => $path,
+            'Author' => 1,
+            'Date' => now(),
+        ]);
+    }
+
+    private function bitmap(): string
+    {
+        $image = imagecreatetruecolor(8, 1);
+        imagefill($image, 0, 0, imagecolorallocate($image, 255, 255, 255));
+        imagetruecolortopalette($image, false, 2);
+
+        ob_start();
+        imagebmp($image, null, true);
+
+        return ob_get_clean();
     }
 }

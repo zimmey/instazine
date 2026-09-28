@@ -422,6 +422,15 @@ static std::string url_encode_query_value(const std::string &value)
     return encoded;
 }
 
+static void set_device_token_header(esp_http_client_handle_t client)
+{
+#ifdef DEVICE_TOKEN
+    esp_http_client_set_header(client, "X-Device-Token", DEVICE_TOKEN);
+#else
+    (void)client;
+#endif
+}
+
 static bool http_get(const std::string &url, http_response_t &response)
 {
     const bool is_https = url.compare(0, 8, "https://") == 0;
@@ -438,6 +447,7 @@ static bool http_get(const std::string &url, http_response_t &response)
     {
         return false;
     }
+    set_device_token_header(client);
 
     const esp_err_t result = esp_http_client_perform(client);
     const int status = result == ESP_OK
@@ -494,6 +504,7 @@ static bool post_ping_message(const char *message)
     {
         return false;
     }
+    set_device_token_header(client);
 
     esp_http_client_set_header(client, "Content-Type", "application/json");
     esp_err_t result = esp_http_client_open(client, body_length);
@@ -1129,6 +1140,7 @@ static void fetch_content()
         report_error("Unable to initialize content HTTP client");
         return;
     }
+    set_device_token_header(client);
 
     const esp_err_t result = esp_http_client_perform(client);
     const int status_code = result == ESP_OK

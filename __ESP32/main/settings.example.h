@@ -10,6 +10,8 @@
 #define CONTENT_API_ROUTE "/api/content"
 #define PIC_API_ROUTE "/api/pic"
 #define PING_API_ROUTE "/api/ping"
+// Uncomment to send X-Device-Token; must match INSTAZINE_DEVICE_TOKEN in the CMS .env.
+// #define DEVICE_TOKEN "change-me"
 #define OK_PHRASE "The Italian explorer has reached the new world"
 #define PRINTER_USB_VENDOR_ID 0x28E9
 #define PRINTER_USB_PRODUCT_ID 0x0289
