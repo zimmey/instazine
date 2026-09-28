@@ -5,32 +5,14 @@ namespace Tests\Feature;
 use App\Enums\UserLevel;
 use App\Models\Article;
 use App\Models\User;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ReporterLandingTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Schema::create('Article', function (Blueprint $table) {
-            $table->id('A_id');
-            $table->dateTime('Date');
-            $table->unsignedBigInteger('Author');
-            $table->string('Headline', 64)->nullable();
-            $table->text('Pic')->nullable();
-            $table->boolean('Approved')->default(false);
-            $table->text('Text')->nullable();
-            $table->timestamps();
-        });
-    }
 
     public function test_valid_reporter_login_creates_an_account_and_shows_the_landing_page(): void
     {
